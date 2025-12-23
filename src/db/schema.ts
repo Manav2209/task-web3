@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { mysqlTable,  varchar, text, datetime, mysqlEnum, json } from "drizzle-orm/mysql-core";
 
 export const eventStatus = ["DRAFT", "PUBLISHED", "CANCELED"] as const;
-
+export type EventStatus = (typeof eventStatus)[number];
 
 export const eventsTable = mysqlTable('public_events', {
     id: varchar("id", { length: 36 }).primaryKey(),
