@@ -2,7 +2,7 @@ import { db }  from "@/db"
 import { eventsTable } from "@/db/schema";
 import { desc, sql ,eq } from "drizzle-orm"
 import { v4 as  uuidv4 } from "uuid";
-import { EventDTO, PaginatedResponse, PaginationParams ,CreateEventInput} from "../types/event";
+import { EventDTO, PaginatedResponse, PaginationParams ,CreateEventInput, UpdateEventInput} from "../types/event";
 
 export class EventService{
 
@@ -60,5 +60,45 @@ export class EventService{
                 totalPages: Math.ceil(total / limit),
                 },
             };
+    }
+
+    static async updateEvent(id: string , input: UpdateEventInput): Promise<EventDTO | null> {
+        // Check if event exists
+        const existingEvent = await this.getEventById(id);
+        if (!existingEvent) return null;
+    
+        const updateData: Record<string, unknown> = {
+            updatedAt: new Date(),
+        };
+    
+        if (input.title !== undefined) updateData.title = input.title;
+        if (input.description !== undefined)
+            updateData.description = input.description || null;
+        if (input.coverImageUrl !== undefined)
+            updateData.coverImageUrl = input.coverImageUrl || null;
+        if (input.location !== undefined) updateData.location = input.location;
+        if (input.startDate !== undefined)
+            updateData.startDate = new Date(input.startDate);
+        if (input.endDate !== undefined)
+            updateData.endDate = new Date(input.endDate);
+        if (input.status !== undefined) updateData.status = input.status;
+        if (input.metadata !== undefined) updateData.metadata = input.metadata;
+    
+        await db
+            .update(eventsTable)
+            .set(updateData)
+            .where(eq(eventsTable.id, id));
+        
+        return this.getEventById(id);
+        
+    }
+    
+    static async deleteEvent(id: string): Promise<boolean> {
+            // Check if event exists
+            const event = await this.getEventById(id);
+            if (!event) return false;
+        
+            await db.delete(eventsTable).where(eq(eventsTable.id, id));
+            return true;
         }
 }

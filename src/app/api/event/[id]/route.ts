@@ -1,57 +1,128 @@
-import { eventStatus } from "@/db/schema";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import { EventService } from "@/lib/service/eventService";
+import { updateEventSchema } from "@/lib/validation/eventValidation";
 
+type RouteParams = {
+  params: { id: string };
+};
 
+// GET /api/events/:id
+export async function GET(req: NextRequest,{ params }: RouteParams) {
+  try {
+    const event = await EventService.getEventById(params.id);
 
+    if (!event) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Event with id '${params.id}' not found`,
+        },
+        { status: 404 }
+      );
+    }
 
-export const createEventSchema = z.object({
-    title: z
-    .string()
-    .min(3, "Title must be at least 3 characters")
-    .max(255, "Title must be at most 255 characters"),
-    description: z
-        .string()
-        .max(2000, "Description must be at most 2000 characters")
-        .optional(),
-    location: z
-        .string()
-        .min(2, "Location must be at least 2 characters")
-        .max(255, "Location must be at most 255 characters"),
-    coverImageUrl: z
-        .string()
-        .url("Invalid image URL")
-        .max(512, "Image URL too long")
-        .optional()
-        .or(z.literal("")),
-    startDate: z.coerce.date(),
-    endDate: z.coerce.date(),
-    metadata: z.unknown().optional(),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: event,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(`[GET /api/events/${params.id}]`, error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch event",
+      },
+      { status: 500 }
+    );
+  }
+}
 
-    
-export const updateEventSchema = z.object({
-  title: z
-    .string()
-    .min(3, "Title must be at least 3 characters")
-    .max(255, "Title must be at most 255 characters")
-    .optional(),
-  description: z
-    .string()
-    .max(2000, "Description must be at most 2000 characters")
-    .optional(),
-  location: z
-    .string()
-    .min(2, "Location must be at least 2 characters")
-    .max(255, "Location must be at most 255 characters")
-    .optional(),
-  coverImageUrl: z
-    .string()
-    .url("Invalid image URL")
-    .max(512, "Image URL too long")
-    .optional()
-    .or(z.literal("")),
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().optional(),
-  status: z.enum(eventStatus).optional(),
-  metadata: z.unknown().optional(),
-})
+// PUT /api/events/:id
+export async function PUT(req: NextRequest,{ params }: RouteParams) {
+  try {
+    const body = await req.json();
+
+    const parsed = updateEventSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid event data",
+          errors: parsed.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+
+    const event = await EventService.updateEvent(
+      params.id,
+      parsed.data
+    );
+
+    if (!event) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Event with id '${params.id}' not found`,
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: event,
+        message: "Event updated successfully",
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(`[PUT /api/events/${params.id}]`, error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to update event",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/events/:id
+export async function DELETE( req: NextRequest,{ params }: RouteParams) {
+  try {
+    const deleted = await EventService.deleteEvent(params.id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Event with id '${params.id}' not found`,
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: { id: params.id },
+        message: "Event deleted successfully",
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(`[DELETE /api/events/${params.id}]`, error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to delete event",
+      },
+      { status: 500 }
+    );
+  }
+}

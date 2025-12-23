@@ -25,6 +25,10 @@ export type CreateEventInput = {
   metadata?: unknown;
 };
 
+export type UpdateEventInput = Partial<CreateEventInput> & {
+  status?: EventStatus;
+};
+
 export type PaginationParams = {
     page?: number;
     limit?: number;
