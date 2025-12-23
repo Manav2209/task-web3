@@ -25,12 +25,16 @@ export class EventService{
             updatedAt: now,
         });
     
-        return this.getEventById(id);
+        const event = await this.getEventById(id);
+        if (!event) {
+            throw new Error("Failed to create event");
+        }
+        return event;
     }
 
     static async getEventById (id : string){
         const event= await db.select().from(eventsTable).where(eq(eventsTable.id, id)).limit(1);
-        return event[0] as EventDTO
+        return event[0] as EventDTO ?? null; 
     }
     
 
